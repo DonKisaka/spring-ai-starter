@@ -33,6 +33,5 @@ build/
 .vscode/
 
 
-### secrets ###
-application.properties
+
 
