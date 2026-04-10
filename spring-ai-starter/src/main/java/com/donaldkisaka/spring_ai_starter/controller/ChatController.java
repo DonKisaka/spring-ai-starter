@@ -3,6 +3,7 @@ package com.donaldkisaka.spring_ai_starter.controller;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,7 +26,7 @@ public class ChatController {
                 .content();
     }
 
-    @GetMapping("/review")
+    @PostMapping("/review")
     public String reviewCode(
             @RequestBody ReviewRequest request) {
 
@@ -45,4 +46,35 @@ public class ChatController {
     }
 
     public record ReviewRequest(String language, String code) {}
+
+    public record CodeReview(
+            String summary,
+            String improvements,
+            String rating  // e.g. "Good", "Needs Work", "Excellent"
+    ) {}
+
+    @PostMapping("/review/structured")
+    public CodeReview structuredReview(@RequestBody ReviewRequest request) {
+
+        BeanOutputConverter<CodeReview> converter = new BeanOutputConverter<>(CodeReview.class);
+
+        PromptTemplate template = new PromptTemplate("""
+              You are an expert {language} developer.
+              Review the following code:
+
+              {code}
+
+              {format}
+              """);
+
+        Prompt prompt = template.create(Map.of(
+                "language", request.language(),
+                "code", request.code(),
+                "format", converter.getFormat()
+        ));
+
+        String response = chatClient.prompt(prompt).call().content();
+        return converter.convert(response);
+    }
+
 }
