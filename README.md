@@ -11,7 +11,8 @@ A hands-on learning project exploring the core concepts of [Spring AI](https://d
 | Language | Java 25 |
 | Framework | Spring Boot 4.0.5 |
 | AI Framework | Spring AI 2.0.0-M4 |
-| LLM Backend | [Ollama](https://ollama.com) (local, `llama3.2`) |
+| LLM — Chat & Structured Output | [Anthropic Claude](https://www.anthropic.com) (`claude-3-5-haiku-20241022`) |
+| LLM — Embeddings, RAG & Tools | [Ollama](https://ollama.com) (local, `llama3.2`) |
 | Embedding Model | `nomic-embed-text` via Ollama |
 | Vector Store | `SimpleVectorStore` (in-memory) |
 | Build Tool | Maven |
@@ -45,7 +46,7 @@ The server starts on `http://localhost:8080`.
 
 ### 1. Chat Client — Basic Prompting & Prompt Templates
 
-> **`GET /api/chat?message=...`**
+> **`GET /api/chat?message=...`** · _Backed by **Anthropic Claude**_
 
 The most fundamental Spring AI concept. The `ChatClient` is the main interface for sending messages to a language model and receiving a response.
 
@@ -73,7 +74,7 @@ Content-Type: application/json
 
 ### 2. Structured Output — `BeanOutputConverter`
 
-> **`POST /api/chat/review/structured`**
+> **`POST /api/chat/review/structured`** · _Backed by **Anthropic Claude**_
 
 Instead of receiving raw text, Spring AI can parse the model's response directly into a Java record or class. The `BeanOutputConverter` generates the JSON schema, injects it into the prompt, and deserialises the response automatically.
 
@@ -97,7 +98,7 @@ Content-Type: application/json
 
 ### 3. Embeddings — Vector Representations of Text
 
-> **`GET /embeddings?text=...`**
+> **`GET /embeddings?text=...`** · _Backed by **Ollama** (`nomic-embed-text`)_
 > **`GET /embeddings/similarity?text1=...&text2=...`**
 
 Embeddings convert text into a numerical vector (array of floats). Semantically similar texts produce vectors that are close together in vector space. This is the foundation of semantic search and RAG.
@@ -117,7 +118,7 @@ GET http://localhost:8080/embeddings/similarity?text1=I love cats&text2=I adore 
 
 ### 4. Vector Store — Storing & Searching Documents
 
-> **`POST /vectorstore/add`**
+> **`POST /vectorstore/add`** · _Backed by **Ollama** (`nomic-embed-text`)_
 > **`GET /vectorstore/search?query=...`**
 
 A `VectorStore` stores documents as embeddings and lets you search them by semantic meaning rather than exact keyword match. This project uses `SimpleVectorStore`, an in-memory implementation backed by a `HashMap` — ideal for learning without needing a database.
@@ -137,7 +138,7 @@ GET http://localhost:8080/vectorstore/search?query=What makes Java AI developmen
 
 ### 5. RAG — Retrieval Augmented Generation
 
-> **`POST /rag/load`**
+> **`POST /rag/load`** · _Backed by **Ollama** (`llama3.2` + `nomic-embed-text`)_
 > **`GET /rag/ask?question=...`**
 
 RAG is the pattern of grounding a language model's answer in your own documents, preventing hallucination and keeping responses factual. The three-step flow is:
@@ -162,7 +163,7 @@ GET http://localhost:8080/rag/ask?question=Where is Donald based?
 
 ### 6. Tool Calling (Function Calling)
 
-> **`GET /tools/weather?question=...`**
+> **`GET /tools/weather?question=...`** · _Backed by **Ollama** (`llama3.2`)_
 
 Tool calling lets the LLM decide to invoke a Java method to fetch real data, rather than guessing. You annotate a service method with `@Tool` and pass the service instance to `.tools(...)` on the `ChatClient`. Spring AI handles the function description, invocation, and response injection automatically.
 
@@ -205,17 +206,20 @@ src/main/java/com/donaldkisaka/spring_ai_starter/
 `src/main/resources/application.properties`:
 
 ```properties
-# Active: Ollama (local)
+# Anthropic Claude — used for Chat Client, Prompt Templates & Structured Output
+# spring.ai.anthropic.api-key=${ANTHROPIC_API_KEY}
+# spring.ai.anthropic.chat.model=claude-3-5-haiku-20241022
+
+# Ollama — used for Embeddings, Vector Store, RAG & Tool Calling
 spring.ai.ollama.chat.model=llama3.2
 spring.ai.ollama.embedding.options.model=nomic-embed-text
 spring.ai.ollama.base-url=http://localhost:11434
-
-# Commented out: Anthropic Claude (swap in by setting ANTHROPIC_API_KEY)
-# spring.ai.anthropic.api-key=${ANTHROPIC_API_KEY}
-# spring.ai.anthropic.chat.model=claude-3-5-haiku-20241022
 ```
 
-To switch from Ollama to Anthropic, uncomment the Anthropic properties, add the `spring-ai-starter-model-anthropic` dependency in `pom.xml`, and comment out the Ollama dependency.
+This project intentionally demonstrates both providers side by side:
+
+- **Anthropic Claude** (`spring-ai-starter-model-anthropic`) powers the chat, prompt template, and structured output endpoints. Swap it in by setting `ANTHROPIC_API_KEY` and uncommenting the Anthropic properties.
+- **Ollama** (`spring-ai-starter-model-ollama`) powers all embedding-based features — embeddings, vector store, RAG, and tool calling — and runs entirely locally with no API key required.
 
 ---
 
