@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 public class WeatherService {
     @Tool(description = "Get the current weather for a given city")
     public String getWeather(String city) {
+        // Simulate fetching weather data from an API also switch expression
         return switch (city.toLowerCase()) {
             case "nairobi" -> "Nairobi: 24°C, Partly Cloudy";
             case "london" -> "London: 12°C, Rainy";
